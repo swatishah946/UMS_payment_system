@@ -46,12 +46,18 @@ describe('deriveStatus', () => {
   });
 
   it('is PAID if any attempt succeeded, even if a later one failed', () => {
-    const payments = [pay('SUCCESS', '2026-10-24T10:00:00Z'), pay('FAILED', '2026-10-24T10:05:00Z')];
+    const payments = [
+      pay('SUCCESS', '2026-10-24T10:00:00Z'),
+      pay('FAILED', '2026-10-24T10:05:00Z'),
+    ];
     expect(deriveStatus('ACTIVE', payments)).toBe(S.PAID);
   });
 
   it('uses the latest attempt otherwise', () => {
-    const payments = [pay('FAILED', '2026-10-24T10:00:00Z'), pay('PENDING', '2026-10-24T10:02:00Z')];
+    const payments = [
+      pay('FAILED', '2026-10-24T10:00:00Z'),
+      pay('PENDING', '2026-10-24T10:02:00Z'),
+    ];
     expect(deriveStatus('ACTIVE', payments)).toBe(S.PENDING);
     expect(deriveStatus('ACTIVE', [pay('USER_DROPPED', '2026-10-24T10:00:00Z')])).toBe(
       S.USER_DROPPED,

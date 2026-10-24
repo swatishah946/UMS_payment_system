@@ -3,13 +3,7 @@
 export type CfOrderStatus = 'ACTIVE' | 'PAID' | 'EXPIRED' | 'TERMINATED' | 'TERMINATION_REQUESTED';
 
 export type CfPaymentStatus =
-  | 'SUCCESS'
-  | 'NOT_ATTEMPTED'
-  | 'FAILED'
-  | 'USER_DROPPED'
-  | 'VOID'
-  | 'CANCELLED'
-  | 'PENDING';
+  'SUCCESS' | 'NOT_ATTEMPTED' | 'FAILED' | 'USER_DROPPED' | 'VOID' | 'CANCELLED' | 'PENDING';
 
 export interface CfCreateOrderRequest {
   order_id: string;
