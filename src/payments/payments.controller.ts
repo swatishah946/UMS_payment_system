@@ -4,6 +4,7 @@ import { StatusSource } from '@prisma/client';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PaymentsService } from './payments.service';
+import { ReconciliationService } from './reconciliation.service';
 
 @ApiTags('payments')
 @Controller('payments/orders')
@@ -41,5 +42,18 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Cancel an unpaid order (admin / ERP)' })
   cancel(@Param('id') id: string, @Body() dto: CancelOrderDto) {
     return this.payments.cancelOrder(id, dto.reason);
+  }
+}
+
+@ApiTags('payments')
+@Controller('payments')
+export class ReconciliationController {
+  constructor(private readonly reconciliation: ReconciliationService) {}
+
+  @Post('reconcile')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Run the reconciliation job now (normally runs every 5 minutes)' })
+  reconcile() {
+    return this.reconciliation.run();
   }
 }
