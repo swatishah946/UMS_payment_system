@@ -359,6 +359,8 @@ describe('Payments (e2e)', () => {
 
       expect(res.body.status).toBe('CANCELLED');
       expect(cf.orders.get(body.orderId)?.order_status).toBe('TERMINATED');
+      const last = (await dbOrder(body.orderId)).history.at(-1);
+      expect(last).toMatchObject({ toStatus: 'CANCELLED', source: 'ADMIN', note: 'fee waived' });
     });
 
     it('refuses to cancel a pending or paid order', async () => {

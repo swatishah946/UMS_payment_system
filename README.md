@@ -30,6 +30,18 @@ npm run start:dev
 | http://localhost:3000/docs | Swagger – all APIs with request/response schemas |
 | http://localhost:3000/health | Health check |
 
+### Try it
+
+Open http://localhost:3000, pick a student and click **Pay** on an invoice. Cashfree's sandbox
+checkout opens; use their [sandbox test data](https://www.cashfree.com/docs/api-reference/payments/data-to-test-integration),
+for example UPI `testsuccess@gocash` (success) or `testfailure@gocash` (failure). After checkout
+you are sent back to the page, which verifies the order and shows its status, attempts and history.
+
+Things worth trying: pay → `PAID` (invoice marked paid) · fail then pay again on the same invoice
+(same order, two attempts) · close the checkout and click **Verify** · **Cancel** an unpaid order ·
+**Run reconciliation**. While a payment is `PENDING` the invoice can't be paid again (prevents double
+charging); it resolves to `PAID`/`FAILED`/`EXPIRED` through verify or reconciliation.
+
 **Webhooks locally (optional):** run `ngrok http 3000` and set
 `PAYMENT_NOTIFY_URL=https://<id>.ngrok-free.app/webhooks/cashfree`. Without webhooks the module still
 reaches the correct status through the verify API and the reconciliation job.

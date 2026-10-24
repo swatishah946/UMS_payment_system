@@ -158,8 +158,9 @@ export class PaymentsService {
    * Pulls the real state of an order from cashfree and applies it.
    * Used by the verify api, webhooks and the reconciliation job, so all
    * three go through exactly the same rules.
+   * `reason` is saved in the history if the status changes (e.g. cancel reason).
    */
-  async syncOrder(id: string, source: StatusSource): Promise<PaymentOrder> {
+  async syncOrder(id: string, source: StatusSource, reason?: string): Promise<PaymentOrder> {
     let order = await this.prisma.paymentOrder.findUnique({ where: { id } });
     if (!order) {
       throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Payment order not found' });
@@ -200,12 +201,17 @@ export class PaymentsService {
         }
 
         let target = deriveStatus(cfOrder.order_status, payments);
-        let note: string | undefined;
+        let note = reason;
 
         if (target === S.PAID && canTransition(current.status, S.PAID)) {
-          note = this.checkAmount(current, cfOrder, payments);
-          if (!note) note = await this.markInvoicePaid(tx, current);
-          if (note) target = S.FLAGGED;
+          // a problem means money arrived but can't be applied to the invoice
+          const problem =
+            this.checkAmount(current, cfOrder, payments) ??
+            (await this.markInvoicePaid(tx, current));
+          if (problem) {
+            target = S.FLAGGED;
+            note = problem;
+          }
         }
 
         const latest = latestPayment(payments);
@@ -247,7 +253,7 @@ export class PaymentsService {
         // usually means it got paid or expired in the meantime, sync below will tell
         this.logger.warn(`terminate ${order.orderId} failed: ${(e as Error).message}`);
       }
-      const synced = await this.syncOrder(order.id, StatusSource.ADMIN);
+      const synced = await this.syncOrder(order.id, StatusSource.ADMIN, reason ?? 'cancelled');
       if (synced.status === S.PAID) {
         throw new ConflictException({
           code: 'ORDER_ALREADY_PAID',
