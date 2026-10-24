@@ -1,0 +1,230 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  background: #f4f5f7;
+  color: #1f2430;
+  font-size: 15px;
+}
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header {
+  background: #1f2a44;
+  color: #fff;
+  padding: 14px 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+.tag {
+  background: #f5b301;
+  color: #1f2430;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.docs-link {
+  margin-left: auto;
+  color: #c9d4ff;
+}
+
+main {
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e3e5ea;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+select {
+  width: 100%;
+  max-width: 360px;
+  padding: 8px;
+  font-size: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid #eef0f3;
+  vertical-align: top;
+}
+
+th {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+button {
+  background: #2f5bea;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #b8c2d6;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #eef1f8;
+  color: #2f5bea;
+}
+
+button.danger {
+  background: #fdecec;
+  color: #c62828;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.row-between h2 {
+  margin: 0;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.mono {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #eef0f3;
+  color: #374151;
+}
+
+.badge.PAID {
+  background: #e3f6e8;
+  color: #1b7a3a;
+}
+
+.badge.ACTIVE,
+.badge.CREATED,
+.badge.UNPAID {
+  background: #e8eefc;
+  color: #2f5bea;
+}
+
+.badge.PENDING {
+  background: #fff4d6;
+  color: #8a6100;
+}
+
+.badge.FAILED,
+.badge.USER_DROPPED,
+.badge.FLAGGED {
+  background: #fdecec;
+  color: #c62828;
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.timeline li {
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid #d5dbe6;
+  font-size: 14px;
+}
+
+.details-row td {
+  background: #fafbfc;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2430;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 6px;
+  max-width: 90%;
+}
+
+.hidden {
+  display: none;
+}

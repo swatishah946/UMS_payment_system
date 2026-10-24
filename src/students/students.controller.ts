@@ -4,11 +4,20 @@ import { PrismaService } from '../prisma/prisma.service';
 
 // read-only views the ERP / student portal needs around payments
 @ApiTags('students')
-@Controller('students/:studentId')
+@Controller('students')
 export class StudentsController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Get('invoices')
+  @Get()
+  @ApiOperation({ summary: 'List students (used by the demo page to pick a student)' })
+  list() {
+    return this.prisma.student.findMany({
+      orderBy: { rollNumber: 'asc' },
+      select: { id: true, rollNumber: true, name: true },
+    });
+  }
+
+  @Get(':studentId/invoices')
   @ApiOperation({ summary: 'Fee invoices of a student with their payment status' })
   async invoices(@Param('studentId', ParseUUIDPipe) studentId: string) {
     await this.ensureStudent(studentId);
@@ -18,7 +27,7 @@ export class StudentsController {
     });
   }
 
-  @Get('payments')
+  @Get(':studentId/payments')
   @ApiOperation({ summary: 'Payment history of a student (all orders, newest first)' })
   async payments(@Param('studentId', ParseUUIDPipe) studentId: string) {
     await this.ensureStudent(studentId);

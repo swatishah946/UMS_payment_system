@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UMS Fee Payments</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap header-row">
+        <h1>UMS Fee Payments</h1>
+        <span class="tag">Cashfree sandbox demo</span>
+        <a class="docs-link" href="/docs" target="_blank">API docs</a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- shown after cashfree redirects back with ?order_id=... -->
+      <section id="result" class="card hidden"></section>
+
+      <section class="card">
+        <label for="student">Student</label>
+        <select id="student"></select>
+      </section>
+
+      <section class="card">
+        <h2>Fee invoices</h2>
+        <div id="invoices"><p class="muted">Loading…</p></div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>Payment history</h2>
+          <button id="reconcile" class="secondary">Run reconciliation</button>
+        </div>
+        <div id="payments"><p class="muted">Loading…</p></div>
+      </section>
+
+      <div id="toast" class="toast hidden"></div>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

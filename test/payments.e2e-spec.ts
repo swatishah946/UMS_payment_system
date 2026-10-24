@@ -440,5 +440,10 @@ describe('Payments (e2e)', () => {
       expect(payments.body).toHaveLength(1);
       expect(payments.body[0].invoice.title).toBe('Tuition');
     });
+
+    it('lists students for the demo page', async () => {
+      const res = await http().get('/students').expect(200);
+      expect(res.body.map((s: Student) => s.rollNumber)).toEqual(['CS1', 'CS2']);
+    });
   });
 });
