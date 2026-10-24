@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- ERP side (minimal, the real ERP already has these) ----------
+
+model Student {
+  id         String   @id @default(uuid()) @db.Uuid
+  rollNumber String   @unique @map("roll_number")
+  name       String
+  email      String
+  phone      String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  invoices FeeInvoice[]
+  orders   PaymentOrder[]
+
+  @@map("students")
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  CANCELLED
+}
+
+model FeeInvoice {
+  id          String        @id @default(uuid()) @db.Uuid
+  studentId   String        @map("student_id") @db.Uuid
+  title       String
+  feeType     String        @map("fee_type") // TUITION, HOSTEL, EXAM ...
+  amount      Decimal       @db.Decimal(12, 2)
+  currency    String        @default("INR")
+  dueDate     DateTime?     @map("due_date")
+  status      InvoiceStatus @default(UNPAID)
+  paidAt      DateTime?     @map("paid_at")
+  paidOrderId String?       @unique @map("paid_order_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  student Student        @relation(fields: [studentId], references: [id])
+  orders  PaymentOrder[]
+
+  @@index([studentId])
+  @@map("fee_invoices")
+}
+
+// ---------- payment module ----------
+
+enum PaymentOrderStatus {
+  CREATED // row saved, cashfree order not created yet
+  ACTIVE // cashfree order created, waiting for student to pay
+  PENDING // a payment attempt is in progress at bank/upi side
+  FAILED // last attempt failed, student can retry on same order
+  USER_DROPPED // student closed/abandoned checkout, can retry
+  PAID
+  EXPIRED
+  CANCELLED
+  FLAGGED // needs manual review (amount mismatch, double payment)
+}
+
+model PaymentOrder {
+  id               String             @id @default(uuid()) @db.Uuid
+  orderId          String             @unique @map("order_id") // our id, sent to cashfree as order_id
+  cfOrderId        String?            @unique @map("cf_order_id")
+  invoiceId        String             @map("invoice_id") @db.Uuid
+  studentId        String             @map("student_id") @db.Uuid
+  amount           Decimal            @db.Decimal(12, 2)
+  currency         String             @default("INR")
+  status           PaymentOrderStatus @default(CREATED)
+  paymentSessionId String?            @map("payment_session_id")
+  idempotencyKey   String?            @unique @map("idempotency_key")
+  expiresAt        DateTime           @map("expires_at")
+  paidAt           DateTime?          @map("paid_at")
+  failureReason    String?            @map("failure_reason")
+  lastSyncedAt     DateTime?          @map("last_synced_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  invoice      FeeInvoice             @relation(fields: [invoiceId], references: [id])
+  student      Student                @relation(fields: [studentId], references: [id])
+  transactions PaymentTransaction[]
+  history      PaymentStatusHistory[]
+
+  @@index([invoiceId])
+  @@index([studentId])
+  @@index([status, updatedAt])
+  @@map("payment_orders")
+}
+
+enum TransactionStatus {
+  SUCCESS
+  NOT_ATTEMPTED
+  FAILED
+  USER_DROPPED
+  VOID
+  CANCELLED
+  PENDING
+}
+
+// one row per payment attempt (cf_payment_id) under an order
+model PaymentTransaction {
+  id             String            @id @default(uuid()) @db.Uuid
+  paymentOrderId String            @map("payment_order_id") @db.Uuid
+  cfPaymentId    String            @unique @map("cf_payment_id")
+  status         TransactionStatus
+  amount         Decimal           @db.Decimal(12, 2)
+  currency       String            @default("INR")
+  paymentGroup   String?           @map("payment_group")
+  bankReference  String?           @map("bank_reference")
+  paymentMessage String?           @map("payment_message")
+  errorCode      String?           @map("error_code")
+  errorReason    String?           @map("error_reason")
+  paymentTime    DateTime?         @map("payment_time")
+  raw            Json
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  order PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+
+  @@index([paymentOrderId])
+  @@map("payment_transactions")
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
+model WebhookEvent {
+  id             String             @id @default(uuid()) @db.Uuid
+  eventKey       String             @unique @map("event_key") // dedupe key (idempotency header or body hash)
+  eventType      String?            @map("event_type")
+  orderId        String?            @map("order_id")
+  cfPaymentId    String?            @map("cf_payment_id")
+  signatureValid Boolean            @map("signature_valid")
+  status         WebhookEventStatus @default(RECEIVED)
+  error          String?
+  payload        Json
+  receivedAt     DateTime           @default(now()) @map("received_at")
+  processedAt    DateTime?          @map("processed_at")
+
+  @@index([orderId])
+  @@map("webhook_events")
+}
+
+enum StatusSource {
+  API
+  WEBHOOK
+  VERIFY
+  RECONCILE
+  ADMIN
+}
+
+// audit trail, never updated or deleted
+model PaymentStatusHistory {
+  id             String              @id @default(uuid()) @db.Uuid
+  paymentOrderId String              @map("payment_order_id") @db.Uuid
+  fromStatus     PaymentOrderStatus? @map("from_status")
+  toStatus       PaymentOrderStatus  @map("to_status")
+  source         StatusSource
+  note           String?
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  order PaymentOrder @relation(fields: [paymentOrderId], references: [id])
+
+  @@index([paymentOrderId])
+  @@map("payment_status_history")
+}
