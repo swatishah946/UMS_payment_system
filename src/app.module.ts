@@ -5,6 +5,7 @@ import configuration from './config/configuration';
 import { HealthController } from './health/health.controller';
 import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StudentsController } from './students/students.controller';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
@@ -15,6 +16,6 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     PaymentsModule,
     WebhooksModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, StudentsController],
 })
 export class AppModule {}
