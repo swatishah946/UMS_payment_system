@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { StatusSource } from '@prisma/client';
+import { AdminKeyGuard } from '../common/admin-key.guard';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PaymentsService } from './payments.service';
@@ -40,6 +41,12 @@ export class PaymentsController {
   @Post(':id/cancel')
   @HttpCode(200)
   @ApiOperation({ summary: 'Cancel an unpaid order (admin / ERP)' })
+  @UseGuards(AdminKeyGuard)
+  @ApiHeader({
+    name: 'x-admin-key',
+    required: false,
+    description: 'Required when ADMIN_API_KEY is set',
+  })
   cancel(@Param('id') id: string, @Body() dto: CancelOrderDto) {
     return this.payments.cancelOrder(id, dto.reason);
   }
@@ -53,6 +60,12 @@ export class ReconciliationController {
   @Post('reconcile')
   @HttpCode(200)
   @ApiOperation({ summary: 'Run the reconciliation job now (normally runs every 5 minutes)' })
+  @UseGuards(AdminKeyGuard)
+  @ApiHeader({
+    name: 'x-admin-key',
+    required: false,
+    description: 'Required when ADMIN_API_KEY is set',
+  })
   reconcile() {
     return this.reconciliation.run();
   }

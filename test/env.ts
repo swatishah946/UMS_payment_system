@@ -10,3 +10,4 @@ process.env.CASHFREE_ENV = 'sandbox';
 process.env.PAYMENT_RETURN_URL = 'http://localhost:5173/payment/status?order_id={order_id}';
 process.env.PAYMENT_NOTIFY_URL = '';
 process.env.ORDER_EXPIRY_MINUTES = '30';
+process.env.ADMIN_API_KEY = 'test_admin_key';

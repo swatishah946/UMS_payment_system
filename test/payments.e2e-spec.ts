@@ -59,6 +59,7 @@ describe('Payments (e2e)', () => {
   // ---------- helpers ----------
 
   const http = () => request(app.getHttpServer());
+  const ADMIN_KEY = 'test_admin_key';
 
   const createOrder = (invoiceId = invoice.id, key?: string, studentId = student.id) => {
     const req = http().post('/payments/orders');
@@ -354,6 +355,7 @@ describe('Payments (e2e)', () => {
 
       const res = await http()
         .post(`/payments/orders/${body.id}/cancel`)
+        .set('x-admin-key', ADMIN_KEY)
         .send({ reason: 'fee waived' })
         .expect(200);
 
@@ -367,12 +369,36 @@ describe('Payments (e2e)', () => {
       const { body } = await createOrder().expect(201);
       cf.pay(body.orderId, 'PENDING');
       await http().post(`/payments/orders/${body.id}/verify`).expect(200);
-      await http().post(`/payments/orders/${body.id}/cancel`).send({}).expect(409);
+      await http()
+        .post(`/payments/orders/${body.id}/cancel`)
+        .set('x-admin-key', ADMIN_KEY)
+        .send({})
+        .expect(409);
 
       cf.pay(body.orderId, 'SUCCESS');
       await http().post(`/payments/orders/${body.id}/verify`).expect(200);
-      const res = await http().post(`/payments/orders/${body.id}/cancel`).send({}).expect(409);
+      const res = await http()
+        .post(`/payments/orders/${body.id}/cancel`)
+        .set('x-admin-key', ADMIN_KEY)
+        .send({})
+        .expect(409);
       expect(res.body.code).toBe('ORDER_ALREADY_PAID');
+    });
+
+    it('admin routes need the admin key', async () => {
+      const { body } = await createOrder().expect(201);
+
+      const missing = await http().post(`/payments/orders/${body.id}/cancel`).send({}).expect(401);
+      expect(missing.body.code).toBe('ADMIN_KEY_REQUIRED');
+      await http()
+        .post(`/payments/orders/${body.id}/cancel`)
+        .set('x-admin-key', 'wrong')
+        .send({})
+        .expect(401);
+      await http().post('/payments/reconcile').expect(401);
+
+      expect((await dbOrder(body.orderId)).status).toBe('ACTIVE');
+      await http().post('/payments/reconcile').set('x-admin-key', ADMIN_KEY).expect(200);
     });
 
     it('reconciliation fixes an order whose webhook never arrived', async () => {
@@ -406,7 +432,11 @@ describe('Payments (e2e)', () => {
     it('flags a double payment instead of losing the money', async () => {
       // order A is cancelled, order B pays the invoice, then A turns out to be paid too
       const a = (await createOrder().expect(201)).body;
-      await http().post(`/payments/orders/${a.id}/cancel`).send({}).expect(200);
+      await http()
+        .post(`/payments/orders/${a.id}/cancel`)
+        .set('x-admin-key', ADMIN_KEY)
+        .send({})
+        .expect(200);
 
       const b = (await createOrder().expect(201)).body;
       cf.pay(b.orderId, 'SUCCESS');

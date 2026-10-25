@@ -17,9 +17,37 @@ async function api(method, url, body, headers = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-    throw new Error(`${data.code || res.status}: ${msg || 'request failed'}`);
+    const err = new Error(`${data.code || res.status}: ${msg || 'request failed'}`);
+    err.code = data.code;
+    throw err;
   }
   return data;
+}
+
+// cancel / reconcile are admin routes. if the server has ADMIN_API_KEY set,
+// ask for the key once and keep it for this browser tab
+async function adminApi(method, url, body) {
+  const headers = () => {
+    try {
+      const key = sessionStorage.getItem('adminKey');
+      return key ? { 'x-admin-key': key } : {};
+    } catch {
+      return {};
+    }
+  };
+  try {
+    return await api(method, url, body, headers());
+  } catch (e) {
+    if (e.code !== 'ADMIN_KEY_REQUIRED') throw e;
+    const key = prompt('Admin key required for this action:');
+    if (!key) throw e;
+    try {
+      sessionStorage.setItem('adminKey', key);
+    } catch {
+      // storage blocked, key is only used for this one request
+    }
+    return api(method, url, body, { 'x-admin-key': key });
+  }
 }
 
 function toast(text) {
@@ -170,7 +198,7 @@ async function verify(id) {
 async function cancel(id) {
   if (!confirm('Cancel this payment order?')) return;
   try {
-    const order = await api('POST', `/payments/orders/${id}/cancel`, {
+    const order = await adminApi('POST', `/payments/orders/${id}/cancel`, {
       reason: 'cancelled from demo page',
     });
     toast(`Order is now ${order.status}`);
@@ -190,7 +218,7 @@ async function showDetails(id) {
 
 document.getElementById('reconcile').addEventListener('click', async () => {
   try {
-    const r = await api('POST', '/payments/reconcile');
+    const r = await adminApi('POST', '/payments/reconcile');
     toast(
       r.skipped
         ? 'Already running'
