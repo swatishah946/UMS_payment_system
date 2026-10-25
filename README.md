@@ -42,9 +42,20 @@ Things worth trying: pay → `PAID` (invoice marked paid) · fail then pay again
 **Run reconciliation**. While a payment is `PENDING` the invoice can't be paid again (prevents double
 charging); it resolves to `PAID`/`FAILED`/`EXPIRED` through verify or reconciliation.
 
+To see the admin guard, set `ADMIN_API_KEY=some-key` in `.env` and restart: cancel/reconcile then
+return `401 ADMIN_KEY_REQUIRED` unless the `x-admin-key` header matches (Swagger shows the field;
+the demo page asks for the key).
+
 **Webhooks locally (optional):** run `ngrok http 3000` and set
 `PAYMENT_NOTIFY_URL=https://<id>.ngrok-free.app/webhooks/cashfree`. Without webhooks the module still
 reaches the correct status through the verify API and the reconciliation job.
+
+### Deployment
+
+The repo contains a `Dockerfile` and a Render blueprint (`render.yaml`: app + PostgreSQL). On
+startup the container runs migrations, seeds demo data if the database is empty, and starts the
+app. When deployed, the return and webhook URLs are derived from the public URL automatically
+(`PUBLIC_URL`, or Render's `RENDER_EXTERNAL_URL`). Only the Cashfree keys need to be set.
 
 ### Environment variables
 
@@ -56,6 +67,8 @@ reaches the correct status through the verify API and the reconciliation job.
 | `CASHFREE_API_VERSION` | Cashfree `x-api-version` (default `2026-01-01`) |
 | `PAYMENT_RETURN_URL` | Where Cashfree sends the student after checkout (`{order_id}` filled by Cashfree) |
 | `PAYMENT_NOTIFY_URL` | Public HTTPS webhook URL (optional) |
+| `ADMIN_API_KEY` | If set, `cancel` and `reconcile` require an `x-admin-key` header with this value (NestJS Guard). Empty = open, for local use |
+| `PUBLIC_URL` | Public base URL when deployed; return/webhook URLs are derived from it if not set |
 | `ORDER_EXPIRY_MINUTES` | Time a student has to pay an order (default 30) |
 
 ---
@@ -119,12 +132,14 @@ Full details in Swagger (`/docs`). Errors always have the shape
 | POST | `/payments/orders` | Create (or reuse) an order for an invoice. Optional `Idempotency-Key` header |
 | GET | `/payments/orders/:id` | Order with attempts and status history (`:id` = uuid or `UMS_...` order id) |
 | POST | `/payments/orders/:id/verify` | Re-check with Cashfree – call on the return page |
-| POST | `/payments/orders/:id/cancel` | Cancel an unpaid order (terminates it at Cashfree too) |
-| POST | `/payments/reconcile` | Run the reconciliation job now (also runs every 5 min) |
+| POST | `/payments/orders/:id/cancel` | Cancel an unpaid order (terminates it at Cashfree too). Needs admin key |
+| POST | `/payments/reconcile` | Run the reconciliation job now (also runs every 5 min). Needs admin key |
 | POST | `/webhooks/cashfree` | Cashfree webhook – signature checked, retries deduped |
 | GET | `/students` | List students |
 | GET | `/students/:id/invoices` | Fee invoices with status |
 | GET | `/students/:id/payments` | Payment history |
+
+**Admin key:** cancel and reconcile are protected by `AdminKeyGuard` when `ADMIN_API_KEY` is set (`x-admin-key` header, 401 `ADMIN_KEY_REQUIRED` otherwise).
 
 Example – `POST /payments/orders` with `{ "invoiceId": "...", "studentId": "..." }`:
 
@@ -204,7 +219,7 @@ All of these are covered by `test/payments.e2e-spec.ts`.
 
 ```bash
 npm test            # unit: state machine, webhook signature, retry rules
-npm run test:e2e    # 30 end-to-end tests on a real Postgres test database
+npm run test:e2e    # 31 end-to-end tests on a real Postgres test database
 ```
 
 The e2e suite uses a separate database (`ums_payments_test`) and replaces only Cashfree's HTTP calls
@@ -215,8 +230,8 @@ expiry. Signature verification uses the real implementation.
 
 ## Not included / next steps
 
-- **Auth:** APIs assume they sit behind the ERP's login; in production `studentId` would come from the
-  session and `cancel`/`reconcile` would be admin-only.
+- **Auth:** student login belongs to the ERP; in production `studentId` would come from the session
+  (JWT guard). Admin routes already have a simple key guard; this would become role-based.
 - **Refunds** for `FLAGGED` orders via Cashfree's refund API.
 - **Distributed lock** for the reconciliation job when running multiple instances.
 - Metrics/alerts (orders per status, webhook failures).

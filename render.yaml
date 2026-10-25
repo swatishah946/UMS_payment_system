@@ -1,0 +1,32 @@
+# Render blueprint: the app (docker) + a free postgres database.
+# Cashfree keys are entered in the Render dashboard when the blueprint is created.
+services:
+  - type: web
+    name: ums-payments
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ums-payments-db
+          property: connectionString
+      - key: CASHFREE_APP_ID
+        sync: false
+      - key: CASHFREE_SECRET_KEY
+        sync: false
+      - key: CASHFREE_ENV
+        value: sandbox
+      - key: CASHFREE_API_VERSION
+        value: 2026-01-01
+      - key: ORDER_EXPIRY_MINUTES
+        value: '30'
+      # protects cancel / reconcile on the public demo (value shown in the Render dashboard)
+      - key: ADMIN_API_KEY
+        generateValue: true
+
+databases:
+  - name: ums-payments-db
+    plan: free
+    databaseName: ums_payments
+    user: ums
