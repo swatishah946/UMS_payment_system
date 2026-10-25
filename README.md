@@ -6,6 +6,20 @@ knows the correct status of every payment – from order creation to the invoice
 
 **Stack:** NestJS 10 (TypeScript) · PostgreSQL 16 · Prisma · Cashfree PG API `2026-01-01` · Jest · Docker
 
+## Live demo
+
+**https://ums-payments.onrender.com** (Cashfree **sandbox** – no real money)
+
+| | |
+|---|---|
+| [Demo page](https://ums-payments.onrender.com) | Pick a student, pay an invoice through Cashfree checkout, see status, attempts and history |
+| [Swagger](https://ums-payments.onrender.com/docs) | All APIs |
+
+Pay with UPI `testsuccess@gocash` (success) or `testfailure@gocash` (failure). Webhooks are live
+here: a successful payment is confirmed by Cashfree's webhook (`source: WEBHOOK` in the order
+history). Hosted on Render's free plan, so the first request after a while can take ~50 seconds to
+wake up. Cancel and reconcile are protected by an admin key on this public deployment.
+
 ---
 
 ## Setup
